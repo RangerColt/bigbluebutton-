@@ -122,4 +122,17 @@ PHP
 | --------- | -------- | --------| -------- |
 | returncode | 每次 | String |　显示防范是否达到预期的效果.只有*两个值*:　**FAILED**:这是一些方法的错误——查看`message` 和｀messageKey｀来获取更多的信息，注意，如果returncode是FAILED，这个调用的返回参数标记成”always returned“不会再被返回。它们只返回一一部分成功的响应。**SUCCESS**调用成功，其他的参数通常是和这个调用会返回的东西有关的　｜
 | message | 有时 | String | 关于调用的附加信息。一个message参数总是会被返回如果returncode是FAILED。如果附加信息有用的话，message也会返回。|
-| messageKey | 有时 | 
+| messageKey | 有时 | String | 提供一个相似的功能给message，并且遵循相同的规则。然而，一个message key更简短，而且在API的生命周期一样长，而不会像message一样会随着时间变化。如果你的第三方软件要返回国际化的或者其他标准的message，基于messageKey你可以查阅你自定义的message
+###create
+创建一个BigBlueButton会议
+这个create调用是幂等的：你可以使用同样的没有副作用的参数多次调用这个接口。这简化了用户加入会话的逻辑，你的程序可以在返回join URL之前一直调用create。用这种方法，不管用户进入的顺序如何，这个会议会一直存在，但不会为空。BigBlueButton服务将会自动的删除空的会议，但是在`defaultMeetingCreateJoinDuration`在`bigbluebutton.properties`定义几分钟之后就再没有用户。
+#####方法URL
+**http://yourserver.com/bigbluebutton/api/create?[parameters]&checksum=[checksum]**
+参数：
+| 参数名 | 必须/可选 | 类型 | 描述 |
+| -------- | -------- | -------- | -------- |
+| name | 可选 | String | 会议名称 |
+| meetingID | 必须 | String |　一个会议的ID用来在第三方app中确定会议。meetingID必须是唯一的：不同的活动的会议不能使用相同搞得meetingID。如果你提供一个不唯一的meetingID（一个正在运行的会议所使用的meetingID，如果另外的接口使用了完全一样的参数，这个create调用也会成功（但是会在响应中返回一个警告信息）。这个create调用是幂等的：调用多次不会产生副作用。这使得第三方app可以避开检查如果一个会议正在运行并且要一直调用create在加入每个用户之前。会议ID应该使用大写或小写的ASCII字符，数字破折号或者下划线。生成一个GUID是一个不错的选择，这会保证不同的会议不会使用相同的会议ID ｜
+| attendeePW | 必选 | String |　这个密码在与会者加入会议时用到，这是可选的，如果没有提供，BigBlueButton会分配一个随机的密码。|
+| moderatorPW | 必选 | String | 这个密码在主持人进入会议时使用，或者某些管理操作（比如，结束会议）。这是可选的，如果没有提供，BigBlueButton会随机分配一个密码（这个密码在调用create接口时返回）|
+| welcome | 可选 | String | 当参与者加入的时候欢迎信息就会显示在聊天窗口上。可以引入一些关键字(%%CONFNAME%%, %%DIALNUM%%, %%CONFNUM%%)这些将会被自动替换。可以在`bigbluebutton.properties`中设置默认欢迎信息。欢迎信息对HTML格式的支持有限，从别的地方粘贴HMTL的时候要小心，比如MS word，因为使用get请求时，URL很容易就会超过长度。 |
